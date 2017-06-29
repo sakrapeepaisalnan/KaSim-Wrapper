@@ -1,0 +1,14 @@
+# Simple binding example (the 'Hello World' of Kappa)
+
+%agent: A(s)
+%agent: B(s)
+
+'Break bond'  A(s!1), B(s!1) -> A(s), B(s) @ 200
+
+%var: 'binding_rate' 1
+
+%init: 1000 A()
+%init: 1000 B()
+
+%obs: 'Monomer_A' |A(s)|
+%obs: 'Dimer_A-B' |A(s!1), B(s!1)|
