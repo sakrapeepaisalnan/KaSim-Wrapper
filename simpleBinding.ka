@@ -3,6 +3,7 @@
 %agent: A(s)
 %agent: B(s)
 
+'Create bond' A(s), B(s) -> A(s!1), B(s!1) @ 'binding_rate'
 'Break bond'  A(s!1), B(s!1) -> A(s), B(s) @ 200
 
 %var: 'binding_rate' 1

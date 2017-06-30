@@ -5,7 +5,7 @@ import getopt
 import time
 import uuid
 
-sys.path.append("./KaSim/python")
+sys.path.append("../KaSim/python")
 import kappa_std
 import kappa_common
 
@@ -22,7 +22,8 @@ class KaSimKappaSim():
     __debug_flag = False
     __runtime = None
     __progress_time = 0
-    __url = "./KaSim/bin/KaSimAgent"
+    __url = "../KaSim/bin/KaSimAgent"
+    #__url = "../KaSim/_build/term/agent.byte"
     __plot_period = 0.1
     __seed = None
     __simulation_id = None
@@ -116,8 +117,14 @@ class KaSimKappaSim():
 
         # if simulator is not started yet
         if self.simulator_status is SimulationStatus.NotStart:
-            with open(self.__temp_files) as f:
-                code = f.read()
+            code = ""
+            try:
+                with open(self.__temp_files) as f:
+                    code = f.read()
+            except Exception:
+                self._debug("")
+
+            if code is not "":
                 file_content = str(code)
                 file_metadata = kappa_common.FileMetadata(self.__temp_files, 0)
 
@@ -184,8 +191,7 @@ class KaSimKappaSim():
     # get a variable value in the simulation
     # Params: string var_name
     def get_variable(self, var_name):
-        input_str = "$PRINTF \"/Users/tr.sakrapee/Desktop/KaSim-master/KaSim/python/temp.txt\" <\"1\"> ".format(var_name)
-        input_str = "$PRINTF \"example\" <\"first\">; $PRINTF \"example\" <\"last\">"
+        input_str = "$PRINTF <{0}>".format(var_name)
 
         self._debug(input_str)
         self._set_perturbation(input_str)
@@ -270,7 +276,7 @@ class KaSimKappaSim():
 def main():
     kasim = KaSimKappaSim(None, True)
     kasim.load_file("simpleBinding.ka")
-    kasim.add_transition('Create bond', 'A(s), B(s) -> A(s!1), B(s!1)', 'binding_rate')
+    #kasim.add_transition('Create bond', 'A(s), B(s) -> A(s!1), B(s!1)', 'binding_rate')
 
     kasim.run_until_time(1)
     #kasim.run_for_time(4)
