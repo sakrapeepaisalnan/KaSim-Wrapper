@@ -4,6 +4,7 @@ import os
 import getopt
 import time
 import uuid
+import numpy as np
 
 sys.path.append("../KaSim/python")
 import kappa_std
@@ -166,11 +167,7 @@ class KaSimKappaSim():
         self.__progress_time = round(simulation_progress_time, 2)
 
         print("progression time: {0}".format(self.__progress_time))
-        print("info")
-        print(simulation_info)
-        plot_detail = self.__runtime.simulation_detail_plot()
-        print("plot")
-        print(plot_detail)
+
 
     def _set_perturbation(self, str):
         self.__runtime.simulation_perturbation(str)
@@ -187,14 +184,67 @@ class KaSimKappaSim():
         self._debug(input_str)
         self._set_perturbation(input_str)
 
-    """ Not working yet """
     # get a variable value in the simulation
     # Params: string var_name
-    def get_variable(self, var_name):
-        input_str = "$PRINTF <{0}>".format(var_name)
+    def _get_observable_value_by_time(self, time_sec=None):
+        if time_sec is None:
+            plot_data = self.__runtime.simulation_detail_plot()
+            plot_legend = plot_data['plot_detail_plot']['plot_legend']
+            plot_time_series = plot_data['plot_detail_plot']['plot_time_series']
+            return plot_legend, plot_time_series
 
-        self._debug(input_str)
-        self._set_perturbation(input_str)
+        plot_limit_offset = time_sec * 10
+        plot_limit_points = 1
+
+        limit = kappa_common.PlotLimit(plot_limit_offset, plot_limit_points)
+
+        plot_data = self.__runtime.simulation_detail_plot(kappa_common.PlotParameter(limit))
+        plot_legend = plot_data['plot_detail_plot']['plot_legend']
+        plot_time_series = plot_data['plot_detail_plot']['plot_time_series']
+        return plot_legend, plot_time_series
+
+    # get observable values by a specific time in second
+    # Params:   integer time_sec
+    # Return:   type <tuple of numpy_array>
+    def get_all_values_by_time(self, time_sec=None):
+        plot_data = self._get_observable_value_by_time(time_sec)
+
+        if plot_data is None:
+            self._debug("get_all_values_by_time: there is no data")
+            return None
+
+        np_plot_time_series = None
+        np_plot_legend = None
+        try:
+            np_plot_legend = np.asarray(plot_data[0])
+            np_plot_time_series = np.asarray(plot_data[1])
+        except Exception as err:
+            self._debug("get_all_values_by_time: catched an exception {0}".format(err.message))
+
+        return np_plot_legend, np_plot_time_series
+
+    # get a particular variable value by its name and a specific time
+    # Params:   integer time_sec
+    #           integer var_name
+    # Return:   type numpy_array
+    def get_value_by_time(self, time_sec, var_name):
+        plot_data = self.get_all_values_by_time(time_sec)
+
+        if plot_data is None:
+            self._debug("get_value_by_time: there is no data")
+            return None
+
+        plot_legend = plot_data[0]
+        plot_time_series = plot_data[1]
+
+        if not (var_name in plot_legend):
+            return plot_legend, plot_time_series
+
+        time_index = np.where('[T]' == plot_legend)
+        var_index = np.where(var_name == plot_legend)
+        plot_legend = np.append(plot_legend[time_index[0][0]], plot_legend[var_index[0][0]])
+        plot_time_series = plot_time_series[:, [time_index[0][0], var_index[0][0]]]
+        return plot_legend, plot_time_series
 
     # adding agents during a simulation
     # Params:   string var_name
@@ -214,9 +264,7 @@ class KaSimKappaSim():
         self._debug(input_str)
         self._set_perturbation(input_str)
 
-    """ need implementation """
-    def get_transition(self):
-        return
+    #def get_transition(self):
 
     # add a transition equation before the simulation start
     # Params:   string trans_name
@@ -244,8 +292,6 @@ class KaSimKappaSim():
         self._debug("Add a variable map: {0}".format(input_str))
         self._write_file_line(input_str)
         return
-
-
 
     # for writing the temp file with an input string
     # Params:   string str
@@ -276,12 +322,11 @@ class KaSimKappaSim():
 def main():
     kasim = KaSimKappaSim(None, True)
     kasim.load_file("simpleBinding.ka")
-    #kasim.add_transition('Create bond', 'A(s), B(s) -> A(s!1), B(s!1)', 'binding_rate')
 
     kasim.run_until_time(1)
-    #kasim.run_for_time(4)
-    kasim.get_variable("Monomer_A")
-    kasim.get_variable("binding_rate")
+    print kasim.get_all_values_by_time()
+    print kasim.get_value_by_time(1, 'Monomer_A')
+
     kasim.run_for_time(1)
 
 if __name__ == "__main__":
