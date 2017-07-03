@@ -88,7 +88,6 @@ class KaSimKappaSim():
     # simulate the model from the current to a particular time
     # Params:   integer time
     def run_until_time(self, time):
-        time = round(time, 2)
         if time <= 0:
             return
         if time <= self.__progress_time:
@@ -99,7 +98,6 @@ class KaSimKappaSim():
     # simulate the model with a specific time
     # Params:   integer time
     def run_for_time(self, time):
-        time = round(time, 2)
         if time <= 0:
             return
 
