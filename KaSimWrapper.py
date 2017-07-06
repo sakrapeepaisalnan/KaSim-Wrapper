@@ -6,7 +6,7 @@ import time
 import uuid
 import numpy as np
 
-sys.path.append("../KaSim/python")
+sys.path.insert(0, "/Users/tr.sakrapee/Documents/GitHub/KaSim/python")
 import kappa_std
 import kappa_common
 
@@ -23,7 +23,7 @@ class KaSimKappaSim():
     __debug_flag = False
     __runtime = None
     __progress_time = 0
-    __url = "../KaSim/bin/KaSimAgent"
+    __url = "/Users/tr.sakrapee/Documents/GitHub/KaSim/bin/KaSimAgent"
     #__url = "../KaSim/_build/term/agent.byte"
     __plot_period = 0.1
     __seed = None
