@@ -257,7 +257,7 @@ class KaSimKappaSim():
     # Params:   string var_name
     #           string var_value
     def delete_agent_value(self, var_name, var_value):
-        input_str = '$DELETE {0} {1}'.format(var_value, var_name)
+        input_str = '$DEL {0} {1}'.format(var_value, var_name)
 
         self._debug(input_str)
         self._set_perturbation(input_str)
