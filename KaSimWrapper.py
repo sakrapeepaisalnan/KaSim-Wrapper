@@ -25,7 +25,7 @@ class KaSimKappaSim():
     __progress_time = 0
     __url = "/Users/tr.sakrapee/Documents/GitHub/KaSim/bin/KaSimAgent"
     #__url = "../KaSim/_build/term/agent.byte"
-    __plot_period = 0.1
+    __plot_period = 0.001
     __seed = None
     __simulation_id = None
 
@@ -90,8 +90,8 @@ class KaSimKappaSim():
     def run_until_time(self, time):
         if time <= 0:
             return
-        if time <= self.__progress_time:
-            return
+        #if time <= self.__progress_time:
+        #    return
 
         self._run(time)
 
@@ -109,6 +109,7 @@ class KaSimKappaSim():
     # Params:   integer time
     def _run(self, pause_time):
         pause_condition = "[T] > {0}".format(str(pause_time))
+        print "Pause condition: " + pause_condition
         simulation_parameter = kappa_common.SimulationParameter(self.__plot_period,
                                                                 self.__simulation_id,
                                                                 pause_condition,
@@ -166,6 +167,12 @@ class KaSimKappaSim():
 
         print("progression time: {0}".format(self.__progress_time))
 
+    # run the simulator for a very short period of time
+    # to obtain an initialized value for the specific parameters
+    def initialize_params(self):
+        self.run_until_time(0.01)
+        print "initialize params"
+        print self.__runtime.simulation_detail_plot()
 
     def _set_perturbation(self, str):
         self.__runtime.simulation_perturbation(str)
@@ -177,7 +184,15 @@ class KaSimKappaSim():
     # Params:   string var_name
     #           string var_value
     def update_variable_value(self, var_name, var_value):
-        input_str = "$UPDATE \"{0}\" {1}".format(var_name, var_value)
+        if self.simulator_status is SimulationStatus.NotStart:
+            input_str = "%mod: [T]=0 do $UPDATE {0} {1}".format(var_name, var_value)
+            self._debug("Update the variable {0} value: {1}".format(var_name, var_value))
+
+            self._debug(input_str)
+            self._write_file_line(input_str)
+            return
+
+        input_str = "$UPDATE {0} {1}".format(var_name, var_value)
 
         self._debug(input_str)
         self._set_perturbation(input_str)
@@ -185,13 +200,18 @@ class KaSimKappaSim():
     # get a variable value in the simulation
     # Params: string var_name
     def _get_observable_value_by_time(self, time_sec=None):
-        if time_sec is None:
-            plot_data = self.__runtime.simulation_detail_plot()
-            plot_legend = plot_data['plot_detail_plot']['plot_legend']
-            plot_time_series = plot_data['plot_detail_plot']['plot_time_series']
-            return plot_legend, plot_time_series
 
-        plot_limit_offset = time_sec * 10
+        plot_data = self.__runtime.simulation_detail_plot()
+        plot_legend = plot_data['plot_detail_plot']['plot_legend']
+        plot_time_series = plot_data['plot_detail_plot']['plot_time_series']
+        return plot_legend, plot_time_series
+        #'%g' %
+        plot_data = self.__runtime.simulation_detail_plot()
+        """plot_limit_offset = (float(time_sec) * 10)
+        if plot_limit_offset == 0.0:
+            plot_limit_offset = 0
+        
+        plot_limit_offset = 100
         plot_limit_points = 1
 
         limit = kappa_common.PlotLimit(plot_limit_offset, plot_limit_points)
@@ -199,7 +219,7 @@ class KaSimKappaSim():
         plot_data = self.__runtime.simulation_detail_plot(kappa_common.PlotParameter(limit))
         plot_legend = plot_data['plot_detail_plot']['plot_legend']
         plot_time_series = plot_data['plot_detail_plot']['plot_time_series']
-        return plot_legend, plot_time_series
+        return plot_legend, plot_time_series"""
 
     # get observable values by a specific time in second
     # Params:   integer time_sec
@@ -235,13 +255,32 @@ class KaSimKappaSim():
         plot_legend = plot_data[0]
         plot_time_series = plot_data[1]
 
+        if plot_time_series.size == 0:
+            return plot_legend, plot_time_series
+
         if not (var_name in plot_legend):
             return plot_legend, plot_time_series
 
         time_index = np.where('[T]' == plot_legend)
         var_index = np.where(var_name == plot_legend)
         plot_legend = np.append(plot_legend[time_index[0][0]], plot_legend[var_index[0][0]])
-        plot_time_series = plot_time_series[:, [time_index[0][0], var_index[0][0]]]
+
+        index = np.where(np.round(plot_time_series[:, time_index[0][0]], 3) == time_sec)
+        print plot_time_series[:, time_index[0][0]]
+        print time_sec
+        if time is np.empty:
+            print time_sec
+            print time_index[0][0]
+            raise Exception("Time_Sec does not match time_index")
+            return
+
+        plot_time_series = plot_time_series[:, [time_index[0][0], var_index[0][0]]][index]
+
+        if plot_time_series is []:
+            print plot_time_series[:, time_index[0][0]]
+            print time_sec
+            raise Exception("plot_time_series is empty")
+            return
         return plot_legend, plot_time_series
 
     # adding agents during a simulation
@@ -264,6 +303,18 @@ class KaSimKappaSim():
 
     #def get_transition(self):
 
+    # add an observation equation before the simulation start
+    # Params: string
+    def add_observation(self, obs_name, obs_expr):
+        if self.simulator_status is not SimulationStatus.NotStart:
+            return
+
+        input_str = "%obs: {0} {1}".format(obs_name, obs_expr)
+
+        self._debug("Add an observation: {0}".format(input_str))
+        self._write_file_line(input_str)
+        return
+
     # add a transition equation before the simulation start
     # Params:   string trans_name
     #           string trans_exp
@@ -272,11 +323,29 @@ class KaSimKappaSim():
         if self.simulator_status is not SimulationStatus.NotStart:
             return
 
-        input_str = "\'{0}\' {1} @ \'{2}\'".format(trans_name, trans_exp, trans_rate)
+        input_str = "\'{0}\' {1} @ {2}".format(trans_name, trans_exp, trans_rate)
 
         self._debug("Add a transition: {0}".format(input_str))
         self._write_file_line(input_str)
         return
+
+    def set_agent_initial_value(self, agent_name, agent_value):
+        if self.simulator_status is not SimulationStatus.NotStart:
+            return
+
+        self._debug("Set agent initial value: {0} with {1}".format(agent_name, agent_value))
+        # %mod: [T]>0 do $DEL |B()| B()
+        # %mod: [T]>0 do $ADD 1000 B()
+
+        # remove current agent
+        input_str = "%mod: [T]=0 do $DEL |{0}()| {0}()".format(agent_name)
+        self._debug("Remove current agent value: {0}".format(input_str))
+        self._write_file_line(input_str)
+
+        # add current agent
+        input_str = "%mod: [T]=0 do $ADD {0} {1}()".format(agent_value, agent_name)
+        self._debug("Remove current agent value: {0}".format(input_str))
+        self._write_file_line(input_str)
 
     # add a map between a variable and its expression before the simulation start
     # Params:   string var_name
@@ -320,12 +389,14 @@ class KaSimKappaSim():
 def main():
     kasim = KaSimKappaSim(None, True)
     kasim.load_file("simpleBinding.ka")
-
     kasim.run_until_time(1)
     print kasim.get_all_values_by_time()
-    print kasim.get_value_by_time(1, 'Monomer_A')
-
-    kasim.run_for_time(1)
+    #kasim.run_until_time(0.025)
+    #print kasim.get_all_values_by_time()
+    #kasim.update_variable_value('binding_rate', 0.0001)
+    #
+    #print kasim.get_value_by_time(0.25, 'Monomer_A')
+    #print kasim.get_all_values_by_time()
 
 if __name__ == "__main__":
     main()
