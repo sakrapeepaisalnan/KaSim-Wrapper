@@ -3,13 +3,18 @@
 %agent: A(s)
 %agent: B(s)
 
+%var: 'binding_rate' 0.000001
+
 'Create bond' A(s), B(s) -> A(s!1), B(s!1) @ 'binding_rate'
 'Break bond'  A(s!1), B(s!1) -> A(s), B(s) @ 200
 
-%var: 'binding_rate' 1
-
 %init: 1000 A()
-%init: 1000 B()
+%init: 2000 B()
 
 %obs: 'Monomer_A' |A(s)|
 %obs: 'Dimer_A-B' |A(s!1), B(s!1)|
+
+%var: 'repeat_it' 1
+%var: 'time_stop' 1
+%mod: alarm 1. do $STOP repeat 'repeat_it' = 1
+

@@ -24,8 +24,7 @@ class KaSimKappaSim():
     __runtime = None
     __progress_time = 0
     __url = "/Users/tr.sakrapee/Documents/GitHub/KaSim/bin/KaSimAgent"
-    #__url = "../KaSim/_build/term/agent.byte"
-    __plot_period = 0.001
+    __plot_period = 0.01
     __seed = None
     __simulation_id = None
 
@@ -170,7 +169,7 @@ class KaSimKappaSim():
     # run the simulator for a very short period of time
     # to obtain an initialized value for the specific parameters
     def initialize_params(self):
-        self.run_until_time(0.01)
+        self.run_until_time(0.001)
         print "initialize params"
         print self.__runtime.simulation_detail_plot()
 
@@ -389,14 +388,14 @@ class KaSimKappaSim():
 def main():
     kasim = KaSimKappaSim(None, True)
     kasim.load_file("simpleBinding.ka")
+    kasim.initialize_params()
+    print kasim.get_all_values_by_time()
     kasim.run_until_time(1)
     print kasim.get_all_values_by_time()
-    #kasim.run_until_time(0.025)
-    #print kasim.get_all_values_by_time()
-    #kasim.update_variable_value('binding_rate', 0.0001)
-    #
-    #print kasim.get_value_by_time(0.25, 'Monomer_A')
-    #print kasim.get_all_values_by_time()
+    kasim.run_until_time(2)
+    print kasim.get_all_values_by_time()
+    kasim.run_until_time(3)
+    print kasim.get_all_values_by_time()
 
 if __name__ == "__main__":
     main()
