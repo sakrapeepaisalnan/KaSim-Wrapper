@@ -24,7 +24,7 @@ class KaSimKappaSim():
     __runtime = None
     __progress_time = 0
     __url = "/Users/tr.sakrapee/Documents/GitHub/KaSim/bin/KaSimAgent"
-    __plot_period = 0.01
+    __plot_period = 0.001
     __seed = None
     __simulation_id = None
 
@@ -264,23 +264,19 @@ class KaSimKappaSim():
         var_index = np.where(var_name == plot_legend)
         plot_legend = np.append(plot_legend[time_index[0][0]], plot_legend[var_index[0][0]])
 
-        index = np.where(np.round(plot_time_series[:, time_index[0][0]], 3) == time_sec)
+        #index = np.where(np.round(plot_time_series[:, time_index[0][0]], 3) == time_sec)
+        index = np.where(self.equal_float(plot_time_series[:, time_index[0][0]], time_sec))
         print plot_time_series[:, time_index[0][0]]
         print time_sec
-        if time is np.empty:
-            print time_sec
-            print time_index[0][0]
-            raise Exception("Time_Sec does not match time_index")
-            return
 
         plot_time_series = plot_time_series[:, [time_index[0][0], var_index[0][0]]][index]
 
-        if plot_time_series is []:
-            print plot_time_series[:, time_index[0][0]]
-            print time_sec
-            raise Exception("plot_time_series is empty")
-            return
+
         return plot_legend, plot_time_series
+
+    def equal_float(self, a, b):
+        # return abs(a - b) <= sys.float_info.epsilon
+        return abs(a - b) <= 1e-10
 
     # adding agents during a simulation
     # Params:   string var_name
@@ -390,7 +386,7 @@ def main():
     kasim.load_file("simpleBinding.ka")
     kasim.initialize_params()
     print kasim.get_all_values_by_time()
-    kasim.run_until_time(1)
+    kasim.run_until_time(0.025)
     print kasim.get_all_values_by_time()
     kasim.run_until_time(2)
     print kasim.get_all_values_by_time()
